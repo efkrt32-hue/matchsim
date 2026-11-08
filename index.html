@@ -40,7 +40,7 @@ async function selectSavedLogo(id){try{let saved=await logoDbGet(id);if(!saved){
 
 function logoControls(g,i,side){const id=g[side];return `<div class="logo-tools"><small class="logo-status" data-logo-status="${id}">${esc(logoState.get(id)||'Arma yüklenmedi')}</small><button type="button" data-logo-upload="${i}:${side}">Arma yükle / değiştir</button><button type="button" data-logo-saved="${i}:${side}">Kayıtlı armayı seç</button><input type="file" accept="image/png,image/jpeg,image/webp" data-logo-file="${i}:${side}" hidden></div>`}
 
-function render(){list.innerHTML=games.map((g,i)=>`<article class="fixture">${picker(g,i,'home')}${picker(g,i,'away')}${logoControls(g,i,'home')}${logoControls(g,i,'away')}<div class="odds">${['MS 1','MS X','MS 2','2,5 Alt','2,5 Üst'].map((s,k)=>`<label>${s}<input type="number" min="1.01" step="0.01" data-i="${i}" data-odd="${k}" value="${g.odds[k]}"></label>`).join('')}</div><div class="foot"><small>Maç ${i+1}</small><button class="remove" data-remove="${i}">Kaldır</button></div></article>`).join('');list.querySelectorAll('.team-picker').forEach(p=>{const input=p.querySelector('.team-search'),panel=p.querySelector('.team-results');input.addEventListener('focus',()=>{closePickers(p);input.select();showResults(p)});input.addEventListener('input',()=>showResults(p));input.addEventListener('keydown',e=>{if(e.key==='Escape'){panel.hidden=true;input.blur()}if(e.key==='Enter'){e.preventDefault();const first=panel.querySelector('[data-team]');if(first)first.click()}});panel.addEventListener('click',e=>{const btn=e.target.closest('[data-team]');if(!btn)return;const g=games[+p.dataset.i];g[p.dataset.side]=+btn.dataset.team;input.value=TEAMS[g[p.dataset.side]].name;panel.hidden=true;input.blur();render();restoreLogo(g[p.dataset.side]).then(()=>{refreshLogoStatus();draw(0)})})});list.querySelectorAll('[data-logo-upload]').forEach(btn=>btn.onclick=()=>list.querySelector('[data-logo-file="'+btn.dataset.logoUpload+'"]').click());list.querySelectorAll('[data-logo-saved]').forEach(btn=>btn.onclick=()=>{const [i,side]=btn.dataset.logoSaved.split(':');selectSavedLogo(games[+i][side])});list.querySelectorAll('[data-logo-file]').forEach(el=>el.onchange=()=>{const [i,side]=el.dataset.logoFile.split(':');customLogo(games[+i][side],el.files[0])});refreshLogoStatus();list.querySelectorAll('input[data-odd]').forEach(el=>el.oninput=()=>games[+el.dataset.i].odds[+el.dataset.odd]=+el.value);list.querySelectorAll('[data-remove]').forEach(el=>el.onclick=()=>{games.splice(+el.dataset.remove,1);render()});draw(0)}
+function render(){list.innerHTML=games.map((g,i)=>`<article class="fixture">${picker(g,i,'home')}${picker(g,i,'away')}${logoControls(g,i,'home')}${logoControls(g,i,'away')}<div class="odds">${['MS 1','MS X','MS 2','2,5 Alt','2,5 Üst'].map((s,k)=>`<label>${s}<input type="number" min="1.01" step="0.01" data-i="${i}" data-odd="${k}" value="${g.odds[k]}"></label>`).join('')}</div><div class="foot"><small>Maç ${i+1}</small><button class="remove" data-remove="${i}">Kaldır</button></div></article>`).join('');list.querySelectorAll('.team-picker').forEach(p=>{const input=p.querySelector('.team-search'),panel=p.querySelector('.team-results');input.addEventListener('focus',()=>{closePickers(p);input.select();showResults(p)});input.addEventListener('input',()=>showResults(p));input.addEventListener('keydown',e=>{if(e.key==='Escape'){panel.hidden=true;input.blur()}if(e.key==='Enter'){e.preventDefault();const first=panel.querySelector('[data-team]');if(first)first.click()}});panel.addEventListener('click',e=>{const btn=e.target.closest('[data-team]');if(!btn)return;const g=games[+p.dataset.i];g[p.dataset.side]=+btn.dataset.team;input.value=TEAMS[g[p.dataset.side]].name;panel.hidden=true;input.blur();render();restoreLogo(g[p.dataset.side]).then(()=>{refreshLogoStatus();draw(0)})})});list.querySelectorAll('[data-logo-upload]').forEach(btn=>btn.onclick=()=>list.querySelector('[data-logo-file="'+btn.dataset.logoUpload+'"]').click());list.querySelectorAll('[data-logo-saved]').forEach(btn=>btn.onclick=()=>{const [i,side]=btn.dataset.logoSaved.split(':');selectSavedLogo(games[+i][side])});list.querySelectorAll('[data-logo-file]').forEach(el=>el.onchange=()=>{const [i,side]=el.dataset.logoFile.split(':');customLogo(games[+i][side],el.files[0])});refreshLogoStatus();list.querySelectorAll('input[data-odd]').forEach(el=>el.oninput=()=>{games[+el.dataset.i].odds[+el.dataset.odd]=el.value.trim()===''?NaN:Number(el.value);if(!recording){lastFile=null;$('share').disabled=true;status('Oran değişti. Yeni video için Simüle et düğmesine bas.')}});list.querySelectorAll('[data-remove]').forEach(el=>el.onclick=()=>{games.splice(+el.dataset.remove,1);render()});draw(0)}
 document.addEventListener('pointerdown',e=>{if(!e.target.closest('.team-picker'))closePickers(null)});
 $('add').onclick=add;const canvas=$('screen'),ctx=canvas.getContext('2d');ctx.setTransform(2,0,0,2,0,0);ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';function text(s,x,y,size=22,align='left',color='#fff',weight='600'){ctx.fillStyle=color;ctx.font=`${weight} ${size}px system-ui`;ctx.textAlign=align;ctx.fillText(s,x,y)}function short(s,max=19){return s.length>max?s.slice(0,max-1)+'…':s}function drawLogo(id,x,y,size){const img=logoImages.get(id);if(img){try{ctx.drawImage(img,x,y,size,size);return}catch(e){}}ctx.fillStyle='#28435c';ctx.fillRect(x,y,size,size);ctx.fillStyle='#c7d8ed';ctx.font='bold 11px system-ui';ctx.textAlign='center';ctx.fillText(TEAMS[id].name.slice(0,2).toUpperCase(),x+size/2,y+size*.66)}let activeGoalEvents=null;
 function draw(minute,states){const w=540,h=960;ctx.fillStyle='#07101e';ctx.fillRect(0,0,w,h);ctx.fillStyle='#0c2439';ctx.fillRect(0,0,w,128);text('MATCHSIM  /  LIVE',30,52,26,'left','#d8e9ff','800');text(String(Math.min(90,Math.floor(minute))).padStart(2,'0')+"'",510,53,38,'right','#52df9a','800');ctx.fillStyle='#283f54';ctx.fillRect(30,91,480,7);ctx.fillStyle='#52df9a';ctx.fillRect(30,91,480*Math.min(1,minute/90),7);let n=games.length;const top=150,bottom=894,gap=n>9?5:n>7?7:12,rowH=Math.min(98,(bottom-top-Math.max(0,n-1)*gap)/Math.max(n,1));games.forEach((g,i)=>{let y=top+i*(rowH+gap);const recentGoal=activeGoalEvents?.[i]?.filter(e=>e.m<=minute).at(-1);
@@ -68,25 +68,33 @@ function status(s){$('status').textContent=s}
 function scores(events,minute){return events.map(ev=>({score:[ev.filter(e=>e.side===0&&e.m<=minute).length,ev.filter(e=>e.side===1&&e.m<=minute).length]}))}
 function setBusy(b){recording=b;$('run').disabled=b;$('add').disabled=b;list.querySelectorAll('select,input,button').forEach(el=>el.disabled=b)}
 function readyFile(blob,extension){if(!blob||blob.size<1000)throw Error('Video dosyası boş oluşturuldu.');lastFile=new File([blob],`matchsim-${Date.now()}.${extension}`,{type:blob.type});$('share').disabled=false;status(`Video hazır (${(blob.size/1048576).toFixed(1)} MB). Galeriye Kaydet düğmesine bas.`)}
-async function encodeMp4(events){
- if(typeof VideoEncoder==='undefined'||typeof VideoFrame==='undefined')throw Error('Bu Safari sürümünde MP4 video kodlayıcısı bulunamadı.');
- status('MP4 kodlayıcısı hazırlanıyor…');
+async function encodeMp4(events,width=1080,fps=15){
+ if(typeof VideoEncoder==='undefined'||typeof VideoFrame==='undefined')throw Error('Bu Safari sürümünde MP4 kodlayıcısı bulunamadı.');
  const {Muxer,ArrayBufferTarget}=await import('https://esm.sh/mp4-muxer@5.2.2');
- const config={codec:'avc1.420028',width:1080,height:1920,bitrate:6500000,framerate:15,avc:{format:'avc'}};
- if(VideoEncoder.isConfigSupported){const check=await VideoEncoder.isConfigSupported(config);if(!check.supported)throw Error('Cihaz H.264 video kodlamasını desteklemiyor.')}
- const target=new ArrayBufferTarget();const muxer=new Muxer({target,video:{codec:'avc',width:1080,height:1920},fastStart:'in-memory'});
- let failure=null;const encoder=new VideoEncoder({output:(chunk,meta)=>{try{muxer.addVideoChunk(chunk,meta)}catch(e){failure=e}},error:e=>{failure=e}});
- encoder.configure(config);
- const fps=15,frames=24*fps;
- for(let i=0;i<=frames;i++){
+ const height=Math.round(width*16/9),config={codec:'avc1.420028',width,height,bitrate:width>=1080?6500000:width>=720?3500000:1800000,framerate:fps,avc:{format:'avc'}};
+ if(VideoEncoder.isConfigSupported){const check=await VideoEncoder.isConfigSupported(config);if(!check.supported)throw Error('H.264 kodlama bu çözünürlükte desteklenmiyor.')}
+ const target=new ArrayBufferTarget(),muxer=new Muxer({target,video:{codec:'avc',width,height},fastStart:'in-memory'});
+ const outCanvas=document.createElement('canvas');outCanvas.width=width;outCanvas.height=height;
+ const outCtx=outCanvas.getContext('2d',{alpha:false});if(!outCtx)throw Error('Video çizim alanı oluşturulamadı.');
+ let encoder=null,failure=null;
+ try{
+  encoder=new VideoEncoder({output:(chunk,meta)=>{try{muxer.addVideoChunk(chunk,meta)}catch(e){failure=e}},error:e=>{failure=e}});
+  encoder.configure(config);
+  const frames=24*fps;
+  for(let i=0;i<frames;i++){
    if(failure)throw failure;
-   const minute=90*Math.min(i/fps,20)/20;draw(i/fps>=20?96:minute,scores(events,90*Math.min(i/fps,20)/20));
-   const frame=new VideoFrame(canvas,{timestamp:Math.round(i*1000000/fps),duration:Math.round(1000000/fps)});
-   encoder.encode(frame,{keyFrame:i%30===0});frame.close();
-   if(i%15===0){status(`MP4 hazırlanıyor… ${Math.round(i/frames*100)}%`);await new Promise(r=>setTimeout(r,0))}
- }
- await encoder.flush();encoder.close();if(failure)throw failure;muxer.finalize();
- return new Blob([target.buffer],{type:'video/mp4'});
+   // Safari hardware encoder can stop accepting frames if its queue grows without bound.
+   while(encoder.encodeQueueSize>3){await encoder.flush();if(failure)throw failure;await new Promise(r=>setTimeout(r,0))}
+   const second=i/fps,minute=90*Math.min(second,20)/20;
+   draw(second>=20?96:minute,scores(events,minute));
+   outCtx.drawImage(canvas,0,0,width,height);
+   const frame=new VideoFrame(outCanvas,{timestamp:Math.round(i*1000000/fps),duration:Math.round(1000000/fps)});
+   try{encoder.encode(frame,{keyFrame:i%Math.max(1,fps*2)===0})}finally{frame.close()}
+   if(i%10===0){status(`Video hazırlanıyor (${width} px)… %${Math.round((i+1)/frames*100)}`);await new Promise(r=>setTimeout(r,0))}
+  }
+  await encoder.flush();if(failure)throw failure;
+  muxer.finalize();return new Blob([target.buffer],{type:'video/mp4'});
+ }finally{if(encoder&&encoder.state!=='closed'){try{encoder.close()}catch(e){}}outCanvas.width=0;outCanvas.height=0}
 }
 function nativeType(){if(typeof MediaRecorder==='undefined'||typeof canvas.captureStream!=='function')return null;return ['video/mp4;codecs=avc1.42E01E','video/mp4','video/webm;codecs=vp8','video/webm'].find(t=>MediaRecorder.isTypeSupported(t))||null}
 function recordNative(events,type){return new Promise((resolve,reject)=>{
@@ -103,18 +111,26 @@ async function run(){
  if(recording)return;
  if(games.some(g=>g.home===g.away)){status('Bir takım kendisiyle oynayamaz.');return}
  let events;try{events=games.map(makeEvents)}catch(e){status(e.message);return}
- activeGoalEvents=events;lastFile=null;$('share').disabled=true;setBusy(true);status('Simülasyon ve video hazırlanıyor…');
+ activeGoalEvents=events;lastFile=null;$('share').disabled=true;setBusy(true);status('Video hazırlanıyor…');
+ const errors=[];
  try{
-  // iPhone Safari often lacks canvas.captureStream; WebCodecs provides an MP4 alternative.
-  const preferMp4=/iPhone|iPad|iPod/.test(navigator.userAgent);
-  const type=nativeType();
-  if(preferMp4&&typeof VideoEncoder!=='undefined'){
-   try{readyFile(await encodeMp4(events),'mp4');return}catch(e){status('MP4 yöntemi başarısız: '+e.message+'; alternatif deneniyor…')}
+  const ios=/iPhone|iPad|iPod/.test(navigator.userAgent)||(/Macintosh/.test(navigator.userAgent)&&navigator.maxTouchPoints>1);
+  // On iOS try the proven MP4 export first, then lower resolutions on encoder pressure.
+  if(ios&&typeof VideoEncoder!=='undefined'){
+   for(const [width,fps] of [[1080,15],[720,15],[540,12]]){
+    try{readyFile(await encodeMp4(events,width,fps),'mp4');return}
+    catch(e){errors.push(`${width}px: ${e.message}`);await new Promise(r=>setTimeout(r,100))}
+   }
   }
-  if(type){const blob=await recordNative(events,type);readyFile(blob,blob.type.includes('mp4')?'mp4':'webm');return}
-  if(!preferMp4&&typeof VideoEncoder!=='undefined'){readyFile(await encodeMp4(events),'mp4');return}
-  status('Bu Safari sürümü video oluşturma API’lerini desteklemiyor. Simülasyon oynatılıyor; video kaydı için iPhone ekran kaydını kullanabilirsin.');await playOnly(events)
- }catch(e){status('Video oluşturulamadı: '+e.message+' — cihazında ekran kaydı alternatifini kullanabilirsin.')}finally{setBusy(false)}
+  const type=nativeType();
+  if(type){try{const blob=await recordNative(events,type);readyFile(blob,blob.type.includes('mp4')?'mp4':'webm');return}catch(e){errors.push('MediaRecorder: '+e.message)}}
+  if(!ios&&typeof VideoEncoder!=='undefined'){
+   for(const [width,fps] of [[1080,15],[720,15],[540,12]]){
+    try{readyFile(await encodeMp4(events,width,fps),'mp4');return}catch(e){errors.push(`${width}px: ${e.message}`)}
+   }
+  }
+  status('Video oluşturulamadı: '+(errors.join(' | ')||'Bu tarayıcıda uygun kayıt yöntemi bulunamadı.'));
+ }catch(e){status('Video hatası: '+e.message)}finally{setBusy(false)}
 }
 $('run').onclick=run;
 $('share').onclick=async()=>{
